@@ -1,126 +1,105 @@
-local Workspace = game:GetService("Workspace")
-local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local Noclip = Instance.new("ScreenGui")
-local BG = Instance.new("Frame")
-local Title = Instance.new("TextLabel")
-local Toggle = Instance.new("TextButton")
-local StatusPF = Instance.new("TextLabel")
-local Status = Instance.new("TextLabel")
-local CloseButton = Instance.new("TextButton") -- X gomb
-local Plr = Players.LocalPlayer
-local Clipon = false
-local Stepped
+local LocalPlayer = Players.LocalPlayer
 
-Noclip.Name = "Noclip"
-Noclip.Parent = CoreGui
+local noclipping = false
+local steppedConnection
+local screenGui
+local mainFrame
+local toggleButton
+local statusLabel
+local closeButton
 
-BG.Name = "BG"
-BG.Parent = Noclip
-BG.BackgroundColor3 = Color3.new(0.0980392, 0.0980392, 0.0980392)
-BG.BorderColor3 = Color3.new(0.0588235, 0.0588235, 0.0588235)
-BG.BorderSizePixel = 2
-BG.Position = UDim2.new(0.149, 0, 0.820, 0)
-BG.Size = UDim2.new(0, 210, 0, 127)
-BG.Active = true
-BG.Draggable = true
+-- 🧩 GUI létrehozása
+local function createGui()
+	if screenGui then screenGui:Destroy() end
 
-Title.Name = "Title"
-Title.Parent = BG
-Title.BackgroundColor3 = Color3.new(0.266667, 0.00392157, 0.627451)
-Title.BorderColor3 = Color3.new(0.180392, 0, 0.431373)
-Title.BorderSizePixel = 2
-Title.Size = UDim2.new(0, 210, 0, 33)
-Title.Font = Enum.Font.Highway
-Title.Text = "Noclip"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.TextScaled = true
-Title.TextSize = 30
-Title.TextStrokeColor3 = Color3.new(0.180392, 0, 0.431373)
-Title.TextStrokeTransparency = 0
+	screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "NoClipGUI"
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-Toggle.Parent = BG
-Toggle.BackgroundColor3 = Color3.new(0.266667, 0.00392157, 0.627451)
-Toggle.BorderColor3 = Color3.new(0.180392, 0, 0.431373)
-Toggle.BorderSizePixel = 2
-Toggle.Position = UDim2.new(0.152, 0, 0.374, 0)
-Toggle.Size = UDim2.new(0, 146, 0, 36)
-Toggle.Font = Enum.Font.Highway
-Toggle.Text = "Toggle"
-Toggle.TextColor3 = Color3.new(1, 1, 1)
-Toggle.TextScaled = true
-Toggle.TextStrokeColor3 = Color3.new(0.180392, 0, 0.431373)
-Toggle.TextStrokeTransparency = 0
+	mainFrame = Instance.new("Frame", screenGui)
+	mainFrame.Size = UDim2.new(0, 250, 0, 120)
+	mainFrame.Position = UDim2.new(0.5, -125, 0.75, 0)
+	mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	mainFrame.Active = true
+	mainFrame.Draggable = true
+	Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 10)
 
-StatusPF.Name = "StatusPF"
-StatusPF.Parent = BG
-StatusPF.BackgroundTransparency = 1
-StatusPF.Position = UDim2.new(0.314, 0, 0.708, 0)
-StatusPF.Size = UDim2.new(0, 56, 0, 20)
-StatusPF.Font = Enum.Font.Highway
-StatusPF.Text = "Status:"
-StatusPF.TextColor3 = Color3.new(1, 1, 1)
-StatusPF.TextScaled = true
+	local title = Instance.new("TextLabel", mainFrame)
+	title.Text = "NoClip GUI"
+	title.Size = UDim2.new(1, 0, 0, 30)
+	title.BackgroundTransparency = 1
+	title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	title.TextScaled = true
+	title.Font = Enum.Font.GothamBold
 
-Status.Name = "Status"
-Status.Parent = BG
-Status.BackgroundTransparency = 1
-Status.Position = UDim2.new(0.58, 0, 0.708, 0)
-Status.Size = UDim2.new(0, 56, 0, 20)
-Status.Font = Enum.Font.Highway
-Status.Text = "off"
-Status.TextColor3 = Color3.new(0.666667, 0, 0)
-Status.TextScaled = true
+	-- ❌ Bezárás gomb
+	closeButton = Instance.new("TextButton", mainFrame)
+	closeButton.Text = "X"
+	closeButton.Size = UDim2.new(0.2, 0, 0, 25)
+	closeButton.Position = UDim2.new(0.8, 0, 0, 0)
+	closeButton.BackgroundColor3 = Color3.fromRGB(120, 40, 40)
+	closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	closeButton.Font = Enum.Font.GothamBold
+	closeButton.TextScaled = true
+	Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
 
-CloseButton.Name = "CloseButton"
-CloseButton.Parent = BG
-CloseButton.Text = "X"
-CloseButton.BackgroundColor3 = Color3.new(0.8, 0, 0)
-CloseButton.Size = UDim2.new(0.15, 0, 0.15, 0)
-CloseButton.Position = UDim2.new(0.83, 0, 0, 0)
-CloseButton.Font = Enum.Font.Highway
-CloseButton.TextColor3 = Color3.new(1, 1, 1)
-CloseButton.TextScaled = true
+	closeButton.MouseButton1Click:Connect(function()
+		if noclipping then
+			noclipping = false
+			if steppedConnection then steppedConnection:Disconnect() end
+		end
+		screenGui:Destroy()
+	end)
 
-CloseButton.MouseButton1Click:Connect(function()
-    if Clipon then
-        Clipon = false
-        Status.Text = "off"
-        Status.TextColor3 = Color3.new(0.666667, 0, 0)
-        if Stepped then Stepped:Disconnect() end
-        if Plr.Character then
-            for _, part in pairs(Plr.Character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
-            end
-        end
-    end
-    Noclip:Destroy()
-end)
+	-- 🔘 Toggle gomb
+	toggleButton = Instance.new("TextButton", mainFrame)
+	toggleButton.Text = "Toggle NoClip"
+	toggleButton.Size = UDim2.new(0.6, 0, 0, 35)
+	toggleButton.Position = UDim2.new(0.2, 0, 0.4, 0)
+	toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	toggleButton.Font = Enum.Font.Gotham
+	toggleButton.TextScaled = true
+	Instance.new("UICorner", toggleButton).CornerRadius = UDim.new(0, 8)
 
-Toggle.MouseButton1Click:Connect(function()
-	if Status.Text == "off" then
-		Clipon = true
-		Status.Text = "on"
-		Status.TextColor3 = Color3.new(0, 185, 0)
-		Stepped = RunService.Stepped:Connect(function()
-			if Clipon then
-				if Plr.Character then
-					for _, part in pairs(Plr.Character:GetChildren()) do
+	-- 🔵 Státusz label
+	statusLabel = Instance.new("TextLabel", mainFrame)
+	statusLabel.Text = "Status: OFF"
+	statusLabel.Size = UDim2.new(1, 0, 0, 20)
+	statusLabel.Position = UDim2.new(0, 0, 0.8, 0)
+	statusLabel.BackgroundTransparency = 1
+	statusLabel.TextColor3 = Color3.fromRGB(200, 0, 0)
+	statusLabel.TextScaled = true
+	statusLabel.Font = Enum.Font.GothamBold
+
+	-- ⚙️ Toggle funkció
+	toggleButton.MouseButton1Click:Connect(function()
+		noclipping = not noclipping
+
+		if noclipping then
+			statusLabel.Text = "Status: ON"
+			statusLabel.TextColor3 = Color3.fromRGB(0, 200, 0)
+
+			steppedConnection = RunService.Stepped:Connect(function()
+				if noclipping and LocalPlayer.Character then
+					for _, part in pairs(LocalPlayer.Character:GetChildren()) do
 						if part:IsA("BasePart") then
 							part.CanCollide = false
 						end
 					end
 				end
-			else
-				if Stepped then Stepped:Disconnect() end
-			end
-		end)
-	elseif Status.Text == "on" then
-		Clipon = false
-		Status.Text = "off"
-		Status.TextColor3 = Color3.new(0.666667, 0, 0)
-	end
-end)
+			end)
+		else
+			statusLabel.Text = "Status: OFF"
+			statusLabel.TextColor3 = Color3.fromRGB(200, 0, 0)
+			if steppedConnection then steppedConnection:Disconnect() end
+		end
+	end)
+end
+
+-- 🚀 GUI indítása
+createGui()
