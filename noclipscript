@@ -1,0 +1,24 @@
+local NoClipEnabled = false
+
+local NoClipToggle = MainTab:CreateToggle({
+    Name = "NoClip",
+    CurrentValue = false,
+    Flag = "nocliptoggle",
+    Callback = function(Value)
+        NoClipEnabled = Value
+    end,
+})
+
+game:GetService("RunService").Stepped:Connect(function()
+    if NoClipEnabled then
+        local player = game.Players.LocalPlayer
+        local char = player.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end
+end)
