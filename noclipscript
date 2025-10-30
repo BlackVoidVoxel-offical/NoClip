@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 local noclipping = false
@@ -10,7 +11,6 @@ local toggleButton
 local statusLabel
 local closeButton
 
--- 🧩 GUI létrehozása
 local function createGui()
 	if screenGui then screenGui:Destroy() end
 
@@ -36,7 +36,6 @@ local function createGui()
 	title.TextScaled = true
 	title.Font = Enum.Font.GothamBold
 
-	-- ❌ Bezárás gomb
 	closeButton = Instance.new("TextButton", mainFrame)
 	closeButton.Text = "X"
 	closeButton.Size = UDim2.new(0.2, 0, 0, 25)
@@ -55,7 +54,6 @@ local function createGui()
 		screenGui:Destroy()
 	end)
 
-	-- 🔘 Toggle gomb
 	toggleButton = Instance.new("TextButton", mainFrame)
 	toggleButton.Text = "Toggle NoClip"
 	toggleButton.Size = UDim2.new(0.6, 0, 0, 35)
@@ -66,7 +64,6 @@ local function createGui()
 	toggleButton.TextScaled = true
 	Instance.new("UICorner", toggleButton).CornerRadius = UDim.new(0, 8)
 
-	-- 🔵 Státusz label
 	statusLabel = Instance.new("TextLabel", mainFrame)
 	statusLabel.Text = "Status: OFF"
 	statusLabel.Size = UDim2.new(1, 0, 0, 20)
@@ -76,14 +73,11 @@ local function createGui()
 	statusLabel.TextScaled = true
 	statusLabel.Font = Enum.Font.GothamBold
 
-	-- ⚙️ Toggle funkció
-	toggleButton.MouseButton1Click:Connect(function()
+	local function toggleNoClip()
 		noclipping = not noclipping
-
 		if noclipping then
 			statusLabel.Text = "Status: ON"
 			statusLabel.TextColor3 = Color3.fromRGB(0, 200, 0)
-
 			steppedConnection = RunService.Stepped:Connect(function()
 				if noclipping and LocalPlayer.Character then
 					for _, part in pairs(LocalPlayer.Character:GetChildren()) do
@@ -98,8 +92,15 @@ local function createGui()
 			statusLabel.TextColor3 = Color3.fromRGB(200, 0, 0)
 			if steppedConnection then steppedConnection:Disconnect() end
 		end
+	end
+
+	toggleButton.MouseButton1Click:Connect(toggleNoClip)
+
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if not processed and input.KeyCode == Enum.KeyCode.R then
+			toggleNoClip()
+		end
 	end)
 end
 
--- 🚀 GUI indítása
 createGui()
